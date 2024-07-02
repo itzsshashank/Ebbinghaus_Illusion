@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Ebbinghaus Illusion</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f8ff;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 2px solid #4682b4;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button, input {
+            margin: 5px;
+        }
+        #explanation {
+            margin-top: 20px;
+            text-align: left;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Ebbinghaus Illusion</h1>
+        <canvas id="myCanvas" width="800" height="400"></canvas>
+        <div class="controls">
+            <div class="control-group">
+                <label for="leftSize">Left Petals Size:</label>
+                <input type="range" id="leftSize" min="50" max="200" value="140">
+            </div>
+            <div class="control-group">
+                <label for="rightSize">Right Petals Size:</label>
+                <input type="range" id="rightSize" min="20" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label for="petalColor">Petal Color:</label>
+                <input type="color" id="petalColor" value="#4169e1">
+            </div>
+            <div class="control-group">
+                <label for="centerColor">Center Color:</label>
+                <input type="color" id="centerColor" value="#ffa500">
+            </div>
+            <button id="freezeBtn">Freeze</button>
+            <button id="measureBtn">Compare Centers</button>
+        </div>
+        <div id="explanation">
+            <h3>About the Ebbinghaus Illusion</h3>
+            <p>The Ebbinghaus illusion, also known as Titchener circles, is an optical illusion of relative size perception. In the illusion, two circles of identical size are placed near to each other, and one is surrounded by large circles while the other is surrounded by small circles. As a result, the central circle surrounded by large circles appears smaller than the central circle surrounded by small circles.</p>
+            <p>This illusion demonstrates how our perception of an object's size can be influenced by its surroundings. It's named after German psychologist Hermann Ebbinghaus (1850-1909), who made significant contributions to the study of memory and perception.</p>
+        </div>
+    </div>
+    <script>
+        const ctx = myCanvas.getContext('2d');
+        let isAnimating = true;
+        let isMeasuring = false;
+
+        const leftSizeSlider = document.getElementById('leftSize');
+        const rightSizeSlider = document.getElementById('rightSize');
+        const petalColorPicker = document.getElementById('petalColor');
+        const centerColorPicker = document.getElementById('centerColor');
+        const freezeBtn = document.getElementById('freezeBtn');
+        const measureBtn = document.getElementById('measureBtn');
+
+        freezeBtn.addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            freezeBtn.textContent = isAnimating ? 'Freeze' : 'Unfreeze';
+        });
+
+        measureBtn.addEventListener('click', () => {
+            isMeasuring = !isMeasuring;
+            measureBtn.textContent = isMeasuring ? 'Hide Comparison' : 'Compare Centers';
+        });
+
+        animate();
+        function animate(){
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+            const t = isAnimating ? Math.sin(new Date().getTime() / 1000) ** 2 : 0.5;
+
+            // Draw the left flower (larger petals)
+            drawFlower({
+                centerX: myCanvas.width / 4,
+                centerY: myCanvas.height / 2,
+                innerRad: 40,
+                outerRad: lerp(Number(leftSizeSlider.value), Number(leftSizeSlider.value) - 40, t),
+                petalRadius: lerp(Number(leftSizeSlider.value) / 3, Number(leftSizeSlider.value) / 4, t),
+                petalCount: 6,
+                color: petalColorPicker.value,
+                centerColor: centerColorPicker.value
+            });
+
+            // Draw the right flower (smaller petals)
+            drawFlower({
+                centerX: 3 * myCanvas.width / 4,
+                centerY: myCanvas.height / 2,
+                innerRad: 40,
+                outerRad: lerp(Number(rightSizeSlider.value), Number(rightSizeSlider.value) - 40, t),
+                petalRadius: lerp(Number(rightSizeSlider.value) / 3, Number(rightSizeSlider.value) / 4, t),
+                petalCount: 6,
+                color: petalColorPicker.value,
+                centerColor: centerColorPicker.value
+            });
+
+            if (isMeasuring) {
+                drawMeasurement();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function lerp(a, b, t){
+            return a + (b-a) * t;
+        }
+
+        function drawFlower({
+            centerX,
+            centerY,
+            innerRad,
+            outerRad,
+            petalRadius,
+            petalCount,
+            color,
+            centerColor
+        }) {
+            // Draw outer petals
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, outerRad, 0, 2 * Math.PI);
+            ctx.lineWidth = petalRadius * 2;
+            ctx.strokeStyle = color;
+            ctx.lineCap = "round";
+            const spacing = 2 * Math.PI * outerRad / petalCount;
+            ctx.setLineDash([0, spacing]);
+            ctx.stroke();
+
+            // Draw center circle
+            ctx.beginPath();
+            ctx.fillStyle = centerColor;
+            ctx.arc(centerX, centerY, innerRad, 0, 2*Math.PI);
+            ctx.fill();
+
+            // Draw a black outline around the center circle
+            ctx.beginPath();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.arc(centerX, centerY, innerRad, 0, 2*Math.PI);
+            ctx.stroke();
+        }
+
+        function drawMeasurement() {
+            const leftCenterX = myCanvas.width / 4;
+            const rightCenterX = 3 * myCanvas.width / 4;
+            const centerY = myCanvas.height / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(leftCenterX, centerY);
+            ctx.lineTo(rightCenterX, centerY);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'red';
+            ctx.textAlign = 'center';
+            ctx.fillText('Same Size', myCanvas.width / 2, centerY - 10);
+        }
+    </script>
+</body>
+</html>
